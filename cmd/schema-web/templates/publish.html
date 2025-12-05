@@ -1,0 +1,373 @@
+{{define "publish.html"}}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메시지 게시 - Schema Registry</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --bg: #0f172a; --bg-card: #1e293b; --bg-hover: #334155;
+            --text: #f1f5f9; --text-muted: #94a3b8; --border: #334155;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 20px; position: fixed; height: 100vh; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .logo-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 30px; }
+        .nav-section { margin-bottom: 24px; }
+        .nav-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { background: var(--primary); }
+        .nav-icon { width: 20px; text-align: center; }
+        .main { flex: 1; margin-left: 260px; padding: 30px 40px; }
+        .page-header { margin-bottom: 30px; }
+        .page-title { font-size: 1.75rem; font-weight: 600; margin-bottom: 8px; }
+        .page-subtitle { color: var(--text-muted); }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 1.1rem; font-weight: 600; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; font-size: 0.85rem; }
+        .table td { padding: 16px; border-bottom: 1px solid var(--border); }
+        .table tr:hover { background: var(--bg-hover); }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--bg-hover); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.95rem; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primary); }
+        .form-textarea { min-height: 200px; font-family: 'Consolas', monospace; resize: vertical; }
+        .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: 'Consolas', monospace; font-size: 0.9rem; }
+        .alert { padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; }
+        .alert-success { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .alert-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .text-muted { color: var(--text-muted); }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        a { color: var(--primary); text-decoration: none; }
+        code { background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">Schema Registry</div>
+            <div class="logo-sub">RabbitMQ Message Schemas</div>
+            <nav class="nav-section">
+                <div class="nav-title">메뉴</div>
+                <a href="/" class="nav-link"><span class="nav-icon">📊</span>대시보드</a>
+                <a href="/schemas" class="nav-link"><span class="nav-icon">📋</span>스키마 목록</a>
+                <a href="/validate" class="nav-link"><span class="nav-icon">✅</span>검증 도구</a>
+                <a href="/publish" class="nav-link active"><span class="nav-icon">🚀</span>메시지 게시</a>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-title">외부 링크</div>
+                <a href="http://localhost:15672" target="_blank" class="nav-link"><span class="nav-icon">🐰</span>RabbitMQ UI</a>
+            </nav>
+        </aside>
+        <main class="main">
+<div class="page-header">
+    <h1 class="page-title">메시지 게시</h1>
+    <p class="page-subtitle">스키마 기반으로 RabbitMQ에 메시지를 게시합니다</p>
+</div>
+
+<!-- 연결 상태 -->
+<div class="card" style="margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        {{if .Connected}}
+        <span style="width: 12px; height: 12px; background: var(--success); border-radius: 50%;"></span>
+        <span class="text-success">RabbitMQ 연결됨</span>
+        {{else}}
+        <span style="width: 12px; height: 12px; background: var(--danger); border-radius: 50%;"></span>
+        <span class="text-danger">RabbitMQ 연결 안됨</span>
+        <span class="text-muted" style="margin-left: 8px;">docker-compose up -d 로 RabbitMQ를 시작해주세요</span>
+        {{end}}
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3 class="card-title mb-4">📤 메시지 발행</h3>
+
+        <div class="form-group">
+            <label class="form-label">스키마 선택</label>
+            <select id="schemaSelect" class="form-select" onchange="loadSampleData()">
+                <option value="">-- 스키마를 선택하세요 --</option>
+                {{range .Schemas}}
+                <option value="{{.Name}}">{{.Name}} (v{{.Version}})</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Exchange</label>
+            <input type="text" id="exchange" class="form-input" value="schema.events" placeholder="schema.events">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Routing Key</label>
+            <input type="text" id="routingKey" class="form-input" placeholder="자동 설정 (스키마 이름 기반)">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">메시지 데이터 (JSON)</label>
+            <textarea id="messageData" class="form-textarea" placeholder='{"key": "value"}'></textarea>
+        </div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="validateBeforePublish" checked>
+                <span>발행 전 스키마 검증</span>
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button onclick="publishMessage()" class="btn btn-primary" {{if not .Connected}}disabled{{end}}>
+                🚀 메시지 발행
+            </button>
+            <button onclick="loadSampleData()" class="btn btn-outline">📝 샘플 데이터</button>
+        </div>
+
+        <div id="publishResult" class="mt-4" style="display: none;"></div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title mb-4">📋 발행 옵션 가이드</h3>
+
+        <div class="mb-4">
+            <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Exchange 타입</h4>
+            <ul class="text-muted" style="padding-left: 20px; font-size: 0.85rem;">
+                <li><strong>topic</strong>: 패턴 기반 라우팅 (기본값)</li>
+                <li><strong>direct</strong>: 정확한 routing key 매칭</li>
+                <li><strong>fanout</strong>: 모든 바인딩된 큐에 전달</li>
+            </ul>
+        </div>
+
+        <div class="mb-4">
+            <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Routing Key 패턴</h4>
+            <ul class="text-muted" style="padding-left: 20px; font-size: 0.85rem;">
+                <li><code>order.created</code> - 주문 생성</li>
+                <li><code>payment.completed</code> - 결제 완료</li>
+                <li><code>user.login</code> - 사용자 로그인</li>
+            </ul>
+        </div>
+
+        <div>
+            <h4 style="font-size: 0.9rem; margin-bottom: 8px;">메시지 헤더 (자동 추가)</h4>
+            <div class="code-block" style="font-size: 0.8rem;">
+<pre>{
+  "schema_name": "OrderEvent",
+  "schema_version": 1,
+  "published_at": "2024-01-15T..."
+}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">📊 발행 히스토리</h3>
+        <button onclick="refreshHistory()" class="btn btn-outline btn-sm">🔄 새로고침</button>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>시간</th>
+                <th>스키마</th>
+                <th>Exchange</th>
+                <th>Routing Key</th>
+                <th>결과</th>
+            </tr>
+        </thead>
+        <tbody id="historyTable">
+            {{range .History}}
+            <tr>
+                <td class="text-muted">#{{.ID}}</td>
+                <td class="text-muted">{{.Timestamp.Format "15:04:05"}}</td>
+                <td><strong>{{.SchemaName}}</strong></td>
+                <td>{{.Exchange}}</td>
+                <td><code>{{.RoutingKey}}</code></td>
+                <td>
+                    {{if .Success}}
+                    <span class="text-success">✅ 성공</span>
+                    {{else}}
+                    <span class="text-danger" title="{{.Error}}">❌ 실패</span>
+                    {{end}}
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="6" class="text-muted" style="text-align: center; padding: 30px;">
+                    발행 히스토리가 없습니다
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+<script>
+const sampleData = {
+    'OrderEvent': {
+        "order_id": "ORD-" + Date.now(),
+        "customer_id": "CUST-100",
+        "amount": 150000,
+        "status": "created",
+        "created_at": new Date().toISOString()
+    },
+    'PaymentEvent': {
+        "payment_id": "PAY-" + Date.now(),
+        "order_id": "ORD-001",
+        "amount": 50000,
+        "currency": "KRW",
+        "status": "completed"
+    },
+    'UserEvent': {
+        "user_id": "USR-" + Date.now(),
+        "action": "login",
+        "timestamp": new Date().toISOString()
+    },
+    'NotificationEvent': {
+        "type": "email",
+        "recipient": "user@example.com",
+        "subject": "주문 확인",
+        "body": "주문이 접수되었습니다."
+    }
+};
+
+function loadSampleData() {
+    const schemaName = document.getElementById('schemaSelect').value;
+    if (schemaName && sampleData[schemaName]) {
+        document.getElementById('messageData').value = JSON.stringify(sampleData[schemaName], null, 2);
+        document.getElementById('routingKey').value = schemaName.toLowerCase().replace('event', '');
+    }
+}
+
+async function publishMessage() {
+    const schemaName = document.getElementById('schemaSelect').value;
+    const exchange = document.getElementById('exchange').value || 'schema.events';
+    const routingKey = document.getElementById('routingKey').value || schemaName.toLowerCase();
+    const dataStr = document.getElementById('messageData').value;
+    const validate = document.getElementById('validateBeforePublish').checked;
+    const resultDiv = document.getElementById('publishResult');
+
+    if (!schemaName) {
+        alert('스키마를 선택해주세요.');
+        return;
+    }
+
+    if (!dataStr.trim()) {
+        alert('메시지 데이터를 입력해주세요.');
+        return;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(dataStr);
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">❌ 잘못된 JSON 형식: ' + err.message + '</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                schema_name: schemaName,
+                exchange: exchange,
+                routing_key: routingKey,
+                data: data,
+                validate: validate
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✅ 메시지 발행 성공!</strong><br>
+                    <small>Exchange: ${exchange}, Routing Key: ${routingKey}</small>
+                </div>`;
+            refreshHistory();
+        } else {
+            let errorHtml = `<div class="alert alert-danger"><strong>❌ 발행 실패</strong><br>${result.error}`;
+            if (result.data && result.data.validation) {
+                errorHtml += '<ul style="margin-top: 8px;">';
+                result.data.validation.errors.forEach(e => {
+                    errorHtml += `<li>${e}</li>`;
+                });
+                errorHtml += '</ul>';
+            }
+            errorHtml += '</div>';
+            resultDiv.innerHTML = errorHtml;
+            refreshHistory();
+        }
+        resultDiv.style.display = 'block';
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">❌ 요청 실패: ' + err.message + '</div>';
+        resultDiv.style.display = 'block';
+    }
+}
+
+async function refreshHistory() {
+    try {
+        const response = await fetch('/api/publish/history');
+        const result = await response.json();
+
+        if (result.success) {
+            updateHistoryTable(result.data);
+        }
+    } catch (err) {
+        console.error('히스토리 조회 실패:', err);
+    }
+}
+
+function updateHistoryTable(history) {
+    const tbody = document.getElementById('historyTable');
+
+    if (!history || history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align: center; padding: 30px;">발행 히스토리가 없습니다</td></tr>';
+        return;
+    }
+
+    let html = '';
+    history.slice(0, 20).forEach(item => {
+        const time = new Date(item.timestamp).toLocaleTimeString('ko-KR');
+        html += `<tr>
+            <td class="text-muted">#${item.id}</td>
+            <td class="text-muted">${time}</td>
+            <td><strong>${item.schema_name}</strong></td>
+            <td>${item.exchange}</td>
+            <td><code>${item.routing_key}</code></td>
+            <td>${item.success
+                ? '<span class="text-success">✅ 성공</span>'
+                : `<span class="text-danger" title="${item.error}">❌ 실패</span>`
+            }</td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+}
+</script>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

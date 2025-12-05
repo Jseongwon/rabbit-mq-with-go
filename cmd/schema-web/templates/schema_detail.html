@@ -1,0 +1,157 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/schemas" class="btn btn-outline btn-sm">← 목록</a>
+        <div>
+            <h1 class="page-title">{{.Schema.Name}}</h1>
+            <p class="page-subtitle">{{.Schema.Description}}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3 class="card-title mb-4">📊 스키마 정보</h3>
+        <table class="table">
+            <tr>
+                <td class="text-muted" style="width: 120px;">ID</td>
+                <td><strong>#{{.Schema.ID}}</strong></td>
+            </tr>
+            <tr>
+                <td class="text-muted">이름</td>
+                <td><strong>{{.Schema.Name}}</strong></td>
+            </tr>
+            <tr>
+                <td class="text-muted">타입</td>
+                <td><span class="badge badge-primary">{{.Schema.Type}}</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">버전</td>
+                <td><span class="badge badge-success">v{{.Schema.Version}}</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">호환성</td>
+                <td><span class="badge badge-warning">{{.Schema.Compatibility}}</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">생성일</td>
+                <td>{{.Schema.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">수정일</td>
+                <td>{{.Schema.UpdatedAt.Format "2006-01-02 15:04:05"}}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title mb-4">📜 버전 히스토리</h3>
+        {{if .Versions}}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>버전</th>
+                    <th>생성일</th>
+                    <th>상태</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Versions}}
+                <tr>
+                    <td><span class="badge badge-success">v{{.Version}}</span></td>
+                    <td class="text-muted">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+                    <td>
+                        {{if eq .Version $.Schema.Version}}
+                        <span class="text-primary">현재</span>
+                        {{else}}
+                        <span class="text-muted">이전</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="text-muted">버전 히스토리가 없습니다.</p>
+        {{end}}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">📝 JSON 스키마 정의</h3>
+        <button onclick="copySchema()" class="btn btn-outline btn-sm">📋 복사</button>
+    </div>
+    <div class="code-block">
+        <pre id="schemaCode">{{.FormattedSchema}}</pre>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title mb-4">🧪 빠른 검증</h3>
+    <p class="text-muted mb-4">이 스키마로 데이터를 검증해보세요.</p>
+
+    <div class="form-group">
+        <label class="form-label">테스트 데이터 (JSON)</label>
+        <textarea id="testData" class="form-textarea" placeholder='{"order_id": "ORD-001", ...}'></textarea>
+    </div>
+
+    <button onclick="validateData()" class="btn btn-primary">검증하기</button>
+
+    <div id="validationResult" class="mt-4" style="display: none;"></div>
+</div>
+
+<script>
+function copySchema() {
+    const schema = document.getElementById('schemaCode').innerText;
+    navigator.clipboard.writeText(schema);
+    alert('스키마가 클립보드에 복사되었습니다!');
+}
+
+async function validateData() {
+    const testData = document.getElementById('testData').value;
+    const resultDiv = document.getElementById('validationResult');
+
+    if (!testData.trim()) {
+        alert('테스트 데이터를 입력해주세요.');
+        return;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(testData);
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">잘못된 JSON 형식: ' + err.message + '</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+
+    const response = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            schema_name: '{{.Schema.Name}}',
+            data: data
+        })
+    });
+
+    const result = await response.json();
+    const validation = result.data;
+
+    if (validation.valid) {
+        resultDiv.innerHTML = '<div class="alert alert-success">✅ 검증 성공! 데이터가 스키마와 일치합니다.</div>';
+    } else {
+        let errorsHtml = '<div class="alert alert-danger"><strong>❌ 검증 실패</strong><ul style="margin-top: 10px;">';
+        validation.errors.forEach(err => {
+            errorsHtml += '<li>' + err + '</li>';
+        });
+        errorsHtml += '</ul></div>';
+        resultDiv.innerHTML = errorsHtml;
+    }
+
+    resultDiv.style.display = 'block';
+}
+</script>
+{{end}}

@@ -1,0 +1,329 @@
+You are orchestrating the SpecKit workflow - a specification-driven development system.
+
+## Context
+
+SpecKit transforms project ideas into production code through 4 phases:
+1. **Constitute** → Define project principles
+2. **Specify** → Create detailed requirements (using Requirements Analyst agent)
+3. **Plan** → Design technical architecture (using Technical Architect agent with parallel execution)
+4. **Implement** → Build with TDD in parallel waves (40-60% faster!)
+
+## Available Commands
+
+**Full Workflow:**
+- `/speckit` - Run the complete guided workflow (all phases)
+
+**Individual Phases:**
+- `/constitute` - Define project principles only
+- `/specify` - Create detailed requirements only
+- `/plan` - Design architecture with parallel execution analysis only
+- `/implement` - Execute implementation in parallel waves only
+
+**Validation & Utilities:**
+- `/validate` - Validate current phase deliverables
+- `/validate plan` - Show parallel execution analysis
+
+**TIP**: Use individual phase commands to jump to a specific step or re-run a phase!
+
+## Your Task
+
+Manage the SpecKit workflow based on the user's input and current state.
+
+## Input Analysis
+
+The user invoked: `/speckit {{arg}}`
+
+Parse the argument:
+- If `{{arg}}` is empty: Check for existing workflow, resume if found, otherwise prompt for project name
+- If `{{arg}}` is a project name: Start new workflow
+- If `{{arg}}` is "status": Show detailed workflow status
+- If `{{arg}}` is "refine": Refine current phase
+- If `{{arg}}` is "reset": Reset workflow (with confirmation)
+
+## Workflow Management
+
+### Check for Existing Workflow
+
+1. Look for `.speckit/state.json` in current directory
+2. If exists: Load state and show resume options
+3. If not exists and no project name provided: Ask user for project name
+
+### Initialize New Workflow
+
+When starting a new workflow, use the Bash tool to run the speckit CLI:
+
+```bash
+speckit init [project-name] --yes
+```
+
+This will:
+- Create .speckit/ directory structure
+- Initialize state.json with workflow tracking
+- Set up quality/, docs/, templates/ subdirectories
+
+To verify initialization succeeded, use Read tool to check `.speckit/state.json` exists.
+
+### Phase Execution
+
+Execute phases in order. For each phase:
+
+1. **Constitute Phase** (Interactive)
+   - Have a conversation with the user about their project
+   - Ask key questions:
+     - What is the core purpose?
+     - What principles should guide decisions?
+     - What should be prioritized? (simplicity, performance, security, etc.)
+     - What are non-negotiables?
+   - Create `.speckit/CONSTITUTION.md` based on answers
+   - Mark phase complete
+
+2. **Specify Phase** (Agent-Driven)
+   - Use the Task tool with the Requirements Analyst agent
+   - Provide the agent with:
+     - Project name
+     - Constitution content
+     - User's project description
+   - Agent creates `.speckit/SPECIFICATION.md`
+   - Agent validates quality using `validateSpecification()` from quality.js
+   - If quality ≥85: Show spec to user for approval
+   - If quality <85: Show issues and recommendations, refine
+   - User must approve before proceeding
+
+3. **Plan Phase** (Agent-Driven)
+   - Use the Task tool with the Technical Architect agent
+   - Provide approved specification
+   - Agent creates `.speckit/PLAN.md`
+   - Agent validates quality using `validatePlan()` from quality.js
+   - If quality ≥85: Show plan to user for approval
+   - If quality <85: Show issues and recommendations, refine
+   - User must approve before proceeding
+
+4. **Implement Phase** (Agent-Driven, Parallel Execution)
+   - IMPORTANT: Execute tasks in PARALLEL when possible to reduce total time
+   - Parse dependency graph from PLAN.md
+   - Execute tasks in waves (topological sort):
+
+     **Wave Execution Process:**
+     1. Get next wave of tasks (tasks with satisfied dependencies)
+     2. If wave has multiple tasks, launch ALL tasks in parallel:
+        - Use multiple Task tool calls in a SINGLE message
+        - Each agent gets Implementation Engineer instructions
+        - All agents work simultaneously
+     3. Wait for all tasks in wave to complete
+     4. Move to next wave
+
+     **Single Task Tool Call Example:**
+     ```
+     Use Task tool with prompt:
+     "You are the Implementation Engineer for TASK-005.
+     [Full engineer.md instructions]
+     Follow RED → GREEN → REFACTOR cycle.
+     Dependencies completed: T001, T002"
+     ```
+
+     **Parallel Tasks Tool Call Example (CRITICAL):**
+     When wave has tasks T005, T006, T007 that can run in parallel:
+     - Make THREE Task tool calls in ONE message
+     - Do NOT wait between calls
+     - Each task runs independently
+
+   - Track progress: Show wave number, tasks in current wave, completed tasks
+   - Validate each task using `validateImplementation()` from quality.js
+   - Must pass quality gates before moving to next wave
+   - Mark workflow complete when all tasks done
+   - Report total time saved through parallelization
+
+### State Management
+
+**To start a phase:** Use Write tool to update `.speckit/state.json`
+- Set phase status to 'in_progress'
+- Set startedAt timestamp
+
+**To complete a phase:** Use Write tool to update `.speckit/state.json`
+- Set phase status to 'completed'
+- Set completedAt timestamp
+- Set quality score
+- Move currentPhase to next phase
+
+Or use Bash tool to run validation:
+```bash
+speckit validate spec    # Validates specification
+speckit validate plan    # Validates plan
+```
+
+### Progress Display
+
+Use Bash tool to check status:
+
+```bash
+speckit status              # Show detailed progress
+speckit status --json       # Get JSON output
+```
+
+Or use Read tool to load `.speckit/state.json` and display:
+- Current phase
+- Progress percentage (completed phases / total phases)
+- Quality scores for each completed phase
+
+Format:
+```
+═══════════════════════════════════════════
+📊 SpecKit Workflow Status
+═══════════════════════════════════════════
+Project: [Project Name]
+Progress: [████████░░] 75%
+
+Phase Status:
+  ✅ Constitute    (100%)
+  ✅ Specify       (88/100)
+  ✅ Plan          (91/100)
+  ⏳ Implement     (8/12 tasks)
+
+Current: T009 - User Authentication
+Last Updated: 2 hours ago
+
+Next Action: Continue implementing T009
+```
+
+## Agent Invocation
+
+When invoking agents, use the Task tool:
+
+```
+Task tool with prompt:
+"You are the [Requirements Analyst/Technical Architect/Implementation Engineer].
+
+[Include full agent instructions from .claude/agents/{analyst|architect|engineer}.md]
+
+Project: [name]
+Phase: [current phase]
+
+Input:
+[Relevant context - constitution, spec, or plan]
+
+Your task:
+[Specific task for this phase]
+
+Output Requirements:
+- Create [SPECIFICATION.md/PLAN.md/code files]
+- Generate quality report
+- Save to .speckit/ directory
+"
+```
+
+## Quality Gates
+
+After each phase that produces artifacts (Specify, Plan, Implement):
+
+1. Load quality report from `.speckit/quality/[phase]-quality.json`
+2. Display quality metrics
+3. If score ≥ threshold:
+   - Show ✅ and proceed to user approval
+4. If score < threshold:
+   - Show ❌ with specific issues
+   - Provide recommendations
+   - Offer to refine or restart
+
+## User Checkpoints
+
+At the end of Constitute, Specify, and Plan phases:
+
+```
+[Phase] completed!
+
+Review: .speckit/[DOCUMENT].md
+Quality: [score]/100
+
+Approve? (yes/refine/restart)
+```
+
+Handle responses:
+- "yes": Proceed to next phase
+- "refine": Ask what to change, update document, re-validate
+- "restart": Reset current phase and start over
+
+## File Structure Management
+
+Ensure proper file structure:
+
+```
+.speckit/
+├── state.json
+├── CONSTITUTION.md
+├── SPECIFICATION.md
+├── PLAN.md
+└── quality/
+    ├── spec-quality.json
+    ├── plan-quality.json
+    ├── T001-quality.json
+    └── ...
+```
+
+Create directories as needed using the Bash tool.
+
+## Error Handling
+
+- If state.json is corrupted: Inform user, offer to reset
+- If agent fails: Show error, offer to retry or refine input
+- If quality gate fails repeatedly: Suggest manual review/edit
+- If user cancels: Save current state, allow resume later
+
+## Commands
+
+Handle these sub-commands:
+
+- `/speckit` - Start new or resume existing
+- `/speckit [project-name]` - Start new workflow
+- `/speckit status` - Show detailed status
+- `/speckit refine` - Refine current phase
+- `/speckit reset` - Reset entire workflow
+
+## Important Notes
+
+- ALWAYS use TodoWrite to track workflow progress
+- Save state after EVERY phase transition
+- Show quality reports to user (transparency)
+- Respect user decisions (if they override quality gate, note it but proceed)
+- Keep user informed at each step
+- Use the actual agent .md files for detailed instructions
+
+## Example Flow
+
+```
+User: /speckit task-manager
+
+1. Init workflow in .speckit/
+2. Start Constitute phase
+   - Ask questions about project
+   - Create CONSTITUTION.md
+   - Mark complete
+3. Start Specify phase
+   - Launch Analyst agent with constitution + description
+   - Agent creates SPECIFICATION.md
+   - Validate quality
+   - Show to user for approval
+   - Wait for user response
+4. If approved, start Plan phase
+   - Launch Architect agent with spec
+   - Agent creates PLAN.md
+   - Validate quality
+   - Show to user for approval
+   - Wait for user response
+5. If approved, start Implement phase
+   - Launch Engineer agent for each task
+   - Track progress
+   - Validate each task
+   - Show status updates
+6. Mark workflow complete
+```
+
+## Next Steps
+
+Based on the current state:
+1. Parse the user's command
+2. Check for existing workflow
+3. Either resume or start new
+4. Execute the current phase
+5. Update state and show progress
+
+Begin now by analyzing `{{arg}}` and taking the appropriate action.

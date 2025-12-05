@@ -1,0 +1,237 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">검증 도구</h1>
+    <p class="page-subtitle">메시지 데이터가 스키마와 일치하는지 검증합니다</p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3 class="card-title mb-4">🧪 데이터 검증</h3>
+
+        <div class="form-group">
+            <label class="form-label">스키마 선택</label>
+            <select id="schemaSelect" class="form-select" onchange="loadSampleData()">
+                <option value="">-- 스키마를 선택하세요 --</option>
+                {{range .Schemas}}
+                <option value="{{.Name}}">{{.Name}} (v{{.Version}})</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">JSON 데이터</label>
+            <textarea id="jsonData" class="form-textarea" placeholder='JSON 데이터를 입력하세요...'></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button onclick="validateData()" class="btn btn-primary">✅ 검증하기</button>
+            <button onclick="loadSampleData()" class="btn btn-outline">📝 샘플 데이터</button>
+            <button onclick="clearForm()" class="btn btn-outline">🗑️ 초기화</button>
+        </div>
+
+        <div id="validationResult" class="mt-4" style="display: none;"></div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title mb-4">📋 샘플 데이터</h3>
+
+        <div class="mb-4">
+            <strong>OrderEvent</strong>
+            <div class="code-block" style="margin-top: 8px; font-size: 0.8rem;">
+<pre>{
+  "order_id": "ORD-001",
+  "customer_id": "CUST-100",
+  "amount": 150000,
+  "status": "created",
+  "created_at": "2024-01-15T10:30:00Z"
+}</pre>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <strong>PaymentEvent</strong>
+            <div class="code-block" style="margin-top: 8px; font-size: 0.8rem;">
+<pre>{
+  "payment_id": "PAY-001",
+  "order_id": "ORD-001",
+  "amount": 50000,
+  "currency": "KRW",
+  "status": "completed"
+}</pre>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <strong>UserEvent</strong>
+            <div class="code-block" style="margin-top: 8px; font-size: 0.8rem;">
+<pre>{
+  "user_id": "USR-001",
+  "action": "login",
+  "timestamp": "2024-01-15T09:00:00Z"
+}</pre>
+            </div>
+        </div>
+
+        <div>
+            <strong>❌ 실패 케이스 (OrderEvent)</strong>
+            <div class="code-block" style="margin-top: 8px; font-size: 0.8rem;">
+<pre>{
+  "order_id": "ORD-002",
+  "amount": -5000,
+  "status": "invalid_status"
+}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title mb-4">📊 검증 히스토리</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>시간</th>
+                <th>스키마</th>
+                <th>결과</th>
+                <th>메시지</th>
+            </tr>
+        </thead>
+        <tbody id="historyTable">
+            <tr>
+                <td colspan="4" class="text-muted" style="text-align: center; padding: 30px;">
+                    검증 히스토리가 없습니다
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+const sampleData = {
+    'OrderEvent': {
+        "order_id": "ORD-001",
+        "customer_id": "CUST-100",
+        "amount": 150000,
+        "status": "created",
+        "created_at": "2024-01-15T10:30:00Z"
+    },
+    'PaymentEvent': {
+        "payment_id": "PAY-001",
+        "order_id": "ORD-001",
+        "amount": 50000,
+        "currency": "KRW",
+        "status": "completed"
+    },
+    'UserEvent': {
+        "user_id": "USR-001",
+        "action": "login",
+        "timestamp": "2024-01-15T09:00:00Z"
+    },
+    'NotificationEvent': {
+        "type": "email",
+        "recipient": "user@example.com",
+        "subject": "주문 확인",
+        "body": "주문이 접수되었습니다."
+    }
+};
+
+const history = [];
+
+function loadSampleData() {
+    const schemaName = document.getElementById('schemaSelect').value;
+    if (schemaName && sampleData[schemaName]) {
+        document.getElementById('jsonData').value = JSON.stringify(sampleData[schemaName], null, 2);
+    }
+}
+
+function clearForm() {
+    document.getElementById('schemaSelect').value = '';
+    document.getElementById('jsonData').value = '';
+    document.getElementById('validationResult').style.display = 'none';
+}
+
+async function validateData() {
+    const schemaName = document.getElementById('schemaSelect').value;
+    const jsonDataStr = document.getElementById('jsonData').value;
+    const resultDiv = document.getElementById('validationResult');
+
+    if (!schemaName) {
+        alert('스키마를 선택해주세요.');
+        return;
+    }
+
+    if (!jsonDataStr.trim()) {
+        alert('JSON 데이터를 입력해주세요.');
+        return;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(jsonDataStr);
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">❌ 잘못된 JSON 형식: ' + err.message + '</div>';
+        resultDiv.style.display = 'block';
+        addToHistory(schemaName, false, 'JSON 파싱 오류');
+        return;
+    }
+
+    const response = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            schema_name: schemaName,
+            data: data
+        })
+    });
+
+    const result = await response.json();
+    const validation = result.data;
+
+    if (validation.valid) {
+        resultDiv.innerHTML = '<div class="alert alert-success">✅ <strong>검증 성공!</strong> 데이터가 스키마와 일치합니다.</div>';
+        addToHistory(schemaName, true, '검증 성공');
+    } else {
+        let errorsHtml = '<div class="alert alert-danger"><strong>❌ 검증 실패!</strong><ul style="margin-top: 10px; margin-bottom: 0;">';
+        validation.errors.forEach(err => {
+            errorsHtml += '<li>' + err + '</li>';
+        });
+        errorsHtml += '</ul></div>';
+        resultDiv.innerHTML = errorsHtml;
+        addToHistory(schemaName, false, validation.errors.join(', '));
+    }
+
+    resultDiv.style.display = 'block';
+}
+
+function addToHistory(schema, success, message) {
+    const now = new Date().toLocaleTimeString('ko-KR');
+    history.unshift({ time: now, schema, success, message });
+
+    if (history.length > 10) history.pop();
+
+    updateHistoryTable();
+}
+
+function updateHistoryTable() {
+    const tbody = document.getElementById('historyTable');
+    let html = '';
+
+    history.forEach(item => {
+        html += `<tr>
+            <td class="text-muted">${item.time}</td>
+            <td><strong>${item.schema}</strong></td>
+            <td>${item.success ? '<span class="text-success">✅ 성공</span>' : '<span class="text-danger">❌ 실패</span>'}</td>
+            <td class="text-muted">${item.message.substring(0, 50)}${item.message.length > 50 ? '...' : ''}</td>
+        </tr>`;
+    });
+
+    if (!html) {
+        html = '<tr><td colspan="4" class="text-muted" style="text-align: center; padding: 30px;">검증 히스토리가 없습니다</td></tr>';
+    }
+
+    tbody.innerHTML = html;
+}
+</script>
+{{end}}

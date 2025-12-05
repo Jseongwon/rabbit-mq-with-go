@@ -1,0 +1,134 @@
+---
+description: Create detailed requirements (SpecKit Specification phase)
+allowed-tools: Read(**/*), Write(**/*), Edit(**/*), Bash(git:*)
+---
+
+# Specify Phase - Create Detailed Requirements
+
+You are guiding the user through the **Specify** phase of the SpecKit workflow.
+
+## Current Phase: SPECIFY
+
+**Goal**: Transform the constitution into detailed, actionable requirements with acceptance criteria.
+
+## Your Task
+
+1. **Validate Prerequisites**
+   - Read `.speckit/state.json` to verify workflow state
+   - Ensure constitute phase is complete
+   - Read `.speckit/CONSTITUTION.md` to understand project principles
+
+2. **Launch Analyst Agent**
+   - Use the Task tool with description: "Create detailed specification"
+   - Prompt for agent:
+     ```
+     You are the Requirements Analyst from .claude/agents/analyst.md.
+
+     Read the CONSTITUTION.md and create a comprehensive SPECIFICATION.md that includes:
+
+     1. **Functional Requirements** (FR001, FR002, etc.)
+        - What the system MUST do
+        - Each requirement should be clear, testable, and traceable
+
+     2. **Non-Functional Requirements** (NFR001, NFR002, etc.)
+        - Performance, security, scalability requirements
+        - Specific metrics and thresholds
+
+     3. **User Stories** (US001, US002, etc.)
+        - As a [user type], I want [goal] so that [benefit]
+        - Each with acceptance criteria checkboxes
+
+     4. **Success Metrics**
+        - How we'll measure project success
+        - Quality gates and thresholds
+
+     Write the specification to .speckit/SPECIFICATION.md
+
+     Follow the constitution's values and constraints.
+     Make requirements SMART: Specific, Measurable, Achievable, Relevant, Time-bound.
+     ```
+
+3. **Quality Validation**
+   - After specification is created, validate it
+   - Check: Clarity (≥85%), Completeness (≥85%), Testability (≥90%)
+   - Write quality report to `.speckit/quality/specification-quality.json`
+
+4. **Update Workflow State**
+   - Mark specify phase as complete in `.speckit/state.json`
+   - Set next phase to "plan"
+   - Record completion timestamp
+
+5. **Show Results**
+   - Display specification summary (number of FRs, NFRs, user stories)
+   - Show quality score
+   - Suggest running `/plan` for next phase
+
+## Specification Template
+
+The analyst should create a spec like this:
+
+```markdown
+# Project Specification
+
+## Functional Requirements
+
+### FR001: [Requirement Name]
+System shall [specific, testable requirement]
+
+### FR002: [Requirement Name]
+System shall [specific, testable requirement]
+
+## Non-Functional Requirements
+
+### NFR001: Performance
+- API response time <200ms for 95th percentile
+- Support 1000 concurrent users
+
+### NFR002: Security
+- All passwords hashed with bcrypt
+- JWT tokens expire after 24 hours
+
+## User Stories
+
+### US001: [Story Name]
+As a [user type], I want [goal] so that [benefit].
+
+**Acceptance Criteria:**
+- [ ] [Specific, testable criterion]
+- [ ] [Specific, testable criterion]
+- [ ] [Specific, testable criterion]
+
+### US002: [Story Name]
+As a [user type], I want [goal] so that [benefit].
+
+**Acceptance Criteria:**
+- [ ] [Specific, testable criterion]
+
+## Success Metrics
+- 95% test coverage
+- All quality gates passing
+- Zero critical security vulnerabilities
+- API deployed and accessible
+```
+
+## Quality Validation
+
+The specification will be scored on:
+- **Clarity** (≥85%): Requirements are clear and unambiguous
+- **Completeness** (≥85%): All aspects are covered
+- **Testability** (≥90%): Each requirement can be tested
+
+If quality score is below thresholds:
+- Show specific issues found
+- Offer to improve the specification
+- Re-validate after improvements
+
+## Important Notes
+
+- Specification should align with constitution
+- Every requirement must be testable
+- User stories should have clear acceptance criteria
+- Non-functional requirements need specific metrics
+- This document guides the entire implementation
+
+**Next**: Run `/plan` to create the technical implementation plan!

@@ -1,0 +1,36 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .speckit/validate-before-write.js",
+          "description": "Validate phase prerequisites before writing spec/plan files"
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write(.speckit/SPECIFICATION.md)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .speckit/validate-spec.js",
+          "description": "Validate specification quality after creation"
+        }
+      ]
+    },
+    {
+      "matcher": "Write(.speckit/PLAN.md)",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .speckit/validate-plan.js",
+          "description": "Validate plan quality after creation"
+        }
+      ]
+    }
+  ]
+}

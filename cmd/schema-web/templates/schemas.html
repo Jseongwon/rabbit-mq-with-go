@@ -1,0 +1,150 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="page-header">
+    <h1 class="page-title">스키마 목록</h1>
+    <p class="page-subtitle">등록된 모든 메시지 스키마를 관리합니다</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📋 등록된 스키마 ({{len .Schemas}}개)</h2>
+        <button onclick="showRegisterModal()" class="btn btn-primary">
+            + 새 스키마 등록
+        </button>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>이름</th>
+                <th>타입</th>
+                <th>버전</th>
+                <th>호환성</th>
+                <th>설명</th>
+                <th>등록일</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Schemas}}
+            <tr>
+                <td><span class="text-muted">#{{.ID}}</span></td>
+                <td>
+                    <a href="/schemas/{{.Name}}">
+                        <strong>{{.Name}}</strong>
+                    </a>
+                </td>
+                <td><span class="badge badge-primary">{{.Type}}</span></td>
+                <td><span class="badge badge-success">v{{.Version}}</span></td>
+                <td><span class="badge badge-warning">{{.Compatibility}}</span></td>
+                <td class="text-muted">{{.Description}}</td>
+                <td class="text-muted">{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+                <td>
+                    <a href="/schemas/{{.Name}}" class="btn btn-outline btn-sm">상세</a>
+                    <button onclick="deleteSchema('{{.Name}}')" class="btn btn-danger btn-sm">삭제</button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="8" class="text-muted" style="text-align: center; padding: 40px;">
+                    등록된 스키마가 없습니다. 새 스키마를 등록해보세요!
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+<!-- Register Modal -->
+<div id="registerModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 600px; max-height: 90vh; overflow-y: auto;">
+        <div class="card-header">
+            <h2 class="card-title">새 스키마 등록</h2>
+            <button onclick="hideRegisterModal()" class="btn btn-outline btn-sm">✕</button>
+        </div>
+        <form onsubmit="registerSchema(event)">
+            <div class="form-group">
+                <label class="form-label">스키마 이름</label>
+                <input type="text" id="schemaName" class="form-input" placeholder="예: OrderEvent" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">설명</label>
+                <input type="text" id="schemaDesc" class="form-input" placeholder="스키마 설명">
+            </div>
+            <div class="form-group">
+                <label class="form-label">JSON 스키마</label>
+                <textarea id="schemaJson" class="form-textarea" placeholder='{"type": "object", "properties": {...}}'></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="hideRegisterModal()" class="btn btn-outline">취소</button>
+                <button type="submit" class="btn btn-primary">등록</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showRegisterModal() {
+    document.getElementById('registerModal').style.display = 'flex';
+}
+
+function hideRegisterModal() {
+    document.getElementById('registerModal').style.display = 'none';
+}
+
+async function registerSchema(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('schemaName').value;
+    const desc = document.getElementById('schemaDesc').value;
+    const schemaStr = document.getElementById('schemaJson').value;
+
+    let schema;
+    try {
+        schema = JSON.parse(schemaStr);
+    } catch (err) {
+        alert('잘못된 JSON 형식입니다: ' + err.message);
+        return;
+    }
+
+    const response = await fetch('/api/schemas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: name,
+            type: 'json',
+            schema: schema,
+            description: desc
+        })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        alert('스키마가 등록되었습니다!');
+        window.location.reload();
+    } else {
+        alert('등록 실패: ' + result.error);
+    }
+}
+
+async function deleteSchema(name) {
+    if (!confirm(`"${name}" 스키마를 삭제하시겠습니까?`)) {
+        return;
+    }
+
+    const response = await fetch('/api/schemas/' + name, {
+        method: 'DELETE'
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        alert('스키마가 삭제되었습니다!');
+        window.location.reload();
+    } else {
+        alert('삭제 실패: ' + result.error);
+    }
+}
+</script>
+{{end}}

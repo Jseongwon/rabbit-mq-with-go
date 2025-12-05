@@ -1,0 +1,111 @@
+---
+description: Define project principles and values (SpecKit Constitution phase)
+allowed-tools: Read(**/*), Write(**/*), Edit(**/*), Bash(git:*)
+---
+
+# Constitute Phase - Define Project Principles
+
+You are guiding the user through the **Constitute** phase of the SpecKit workflow.
+
+## Current Phase: CONSTITUTE
+
+**Goal**: Define the project's core principles, values, and architectural guidelines.
+
+## Your Task
+
+1. **Check Workflow State**
+   - Read `.speckit/state.json` to verify current phase
+   - Ensure workflow is in "not_started" or "constitute" phase
+   - If in a later phase, ask user if they want to re-run constitute
+
+2. **Load Constitution Template**
+   - Read `.speckit/templates/constitution.md` (if exists)
+   - Or use default constitution template
+
+3. **Guide Constitution Creation**
+
+   Ask the user these key questions:
+
+   a) **Project Vision**: What is the primary goal of this project?
+
+   b) **Core Values**: What principles should guide development?
+      - Examples: Simplicity, Performance, Security, Accessibility
+
+   c) **Technology Constraints**: Any required or forbidden technologies?
+
+   d) **Quality Standards**: What defines "done"?
+      - Test coverage requirements
+      - Code review requirements
+      - Documentation requirements
+
+   e) **Development Principles**: How should code be written?
+      - DRY, SOLID, KISS principles
+      - Naming conventions
+      - Error handling philosophy
+
+4. **Create CONSTITUTION.md**
+   - Write `.speckit/CONSTITUTION.md` with the agreed principles
+   - Include sections: Vision, Core Values, Technology Stack, Quality Standards, Development Principles
+   - Make it clear, actionable, and specific
+
+5. **Update Workflow State**
+   - Mark constitute phase as complete in `.speckit/state.json`
+   - Set next phase to "specify"
+
+6. **Create Quality Report**
+   - Validate the constitution (clarity, completeness, actionability)
+   - Write `.speckit/quality/constitution-quality.json` with scores
+
+7. **Next Steps**
+   - Show success message
+   - Suggest running `/specify` to move to next phase
+   - Or `speckit specify` via CLI
+
+## Constitution Template
+
+Use this structure:
+
+```markdown
+# Project Constitution
+
+## Vision
+[What are we building and why?]
+
+## Core Values
+1. [Value 1]: [Description]
+2. [Value 2]: [Description]
+3. [Value 3]: [Description]
+
+## Technology Stack
+- **Language**: [e.g., TypeScript, Python]
+- **Framework**: [e.g., React, Express]
+- **Database**: [e.g., PostgreSQL]
+- **Testing**: [e.g., Vitest, Pytest]
+
+## Quality Standards
+- **Test Coverage**: Minimum X% coverage
+- **Code Review**: All code must be reviewed
+- **Documentation**: All public APIs must be documented
+
+## Development Principles
+1. **Simplicity First**: Prefer simple solutions over clever ones
+2. **Test-Driven**: Write tests before implementation
+3. **Incremental**: Ship small, working changes frequently
+4. [Add more principles...]
+
+## Constraints
+- **Must have**: [Required features/technologies]
+- **Must not have**: [Forbidden approaches]
+- **Performance**: [Specific requirements]
+- **Security**: [Security requirements]
+```
+
+## Important Notes
+
+- Be conversational and helpful
+- Ask clarifying questions to understand the project
+- Don't assume - get specific details from the user
+- Make the constitution actionable, not abstract
+- Keep it concise (1-2 pages max)
+
+**Remember**: A good constitution makes the rest of the workflow much smoother!

@@ -1,0 +1,181 @@
+---
+description: Design architecture with parallel execution (SpecKit Plan phase)
+allowed-tools: Read(**/*), Write(**/*), Edit(**/*), Bash(git:*), Bash(node:*)
+---
+
+# Plan Phase - Design Architecture with Parallel Execution
+
+You are guiding the user through the **Plan** phase of the SpecKit workflow.
+
+## Current Phase: PLAN
+
+**Goal**: Create a detailed technical plan with tasks optimized for **parallel execution** (40-60% time savings!).
+
+## Your Task
+
+1. **Validate Prerequisites**
+   - Read `.speckit/state.json` to verify workflow state
+   - Ensure specify phase is complete
+   - Read `.speckit/CONSTITUTION.md` for technical constraints
+   - Read `.speckit/SPECIFICATION.md` for requirements
+
+2. **Launch Architect Agent**
+   - Use the Task tool with description: "Create technical implementation plan"
+   - Prompt for agent:
+     ```
+     You are the Technical Architect from .claude/agents/architect.md.
+
+     Read the CONSTITUTION.md and SPECIFICATION.md and create a comprehensive PLAN.md that includes:
+
+     1. **Architecture Overview**
+        - High-level system design
+        - Technology stack decisions
+        - Component breakdown
+
+     2. **Task Breakdown** (THIS IS CRITICAL!)
+        - Each task with format: T001, T002, etc.
+        - **Dependencies**: List which tasks must complete before this one
+        - **Estimated Time**: Hours needed
+        - **Description**: What needs to be done
+        - **Acceptance Criteria**: Checkboxes for completion
+
+     3. **Parallel Execution Analysis**
+        - Group tasks into waves based on dependencies
+        - Show execution timeline: Sequential vs Parallel
+        - Calculate time savings
+
+     4. **Technology Choices**
+        - Justify each major technology decision
+        - Align with constitution values
+
+     CRITICAL for Parallel Execution:
+     - Minimize dependencies between tasks
+     - Identify tasks that can run simultaneously
+     - Group independent tasks together (e.g., database setup + frontend shell)
+     - Aim for 40-60% time reduction through parallelization
+
+     Write the plan to .speckit/PLAN.md
+     ```
+
+3. **Analyze Dependency Graph**
+   - After plan is created, validate dependency structure
+   - Use Bash to run: `node -e "import('./src/core/dependency-graph.js').then(m => { const graph = m.parseDependencyGraph(require('fs').readFileSync('.speckit/PLAN.md', 'utf-8')); console.log(JSON.stringify(m.calculateTimeSavings(graph), null, 2)); })"`
+   - Show parallelization score and time savings
+
+4. **Quality Validation**
+   - Validate plan quality (≥85% threshold)
+   - Check dependency graph for circular dependencies
+   - Verify parallelization opportunities
+   - Write quality report to `.speckit/quality/plan-quality.json`
+
+5. **Show Execution Plan**
+   - Display execution waves
+   - Show sequential time vs parallel time
+   - Highlight time savings percentage
+
+6. **Update Workflow State**
+   - Mark plan phase as complete in `.speckit/state.json`
+   - Set next phase to "implement"
+   - Record completion timestamp
+
+7. **Next Steps**
+   - Show success message with time savings
+   - Suggest running `/implement` to start parallel task execution
+   - Or `speckit validate plan` to see detailed execution plan
+
+## Plan Template Structure
+
+The architect should create a plan like this:
+
+```markdown
+# Implementation Plan - [Project Name]
+
+## Architecture Overview
+[High-level design, components, data flow]
+
+## Technology Choices
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Language | TypeScript | Type safety, team expertise |
+| ... | ... | ... |
+
+## Task Breakdown
+
+### T001: Project Initialization
+**Dependencies**: None
+**Estimated Time**: 2 hours
+**Description**: Set up project structure, dependencies, tooling
+
+**Acceptance Criteria:**
+- [ ] package.json created
+- [ ] TypeScript configured
+- [ ] Testing framework setup
+- [ ] CI/CD pipeline configured
+
+### T002: Database Schema
+**Dependencies**: None
+**Estimated Time**: 3 hours
+**Description**: Design and implement database schema
+
+**Acceptance Criteria:**
+- [ ] Tables defined
+- [ ] Migrations created
+- [ ] Seed data prepared
+
+### T003: API Framework
+**Dependencies**: T001
+**Estimated Time**: 2 hours
+**Description**: Set up Express server with middleware
+
+**Acceptance Criteria:**
+- [ ] Server running
+- [ ] Error handling middleware
+- [ ] Logging configured
+
+## Execution Timeline
+
+**Sequential Execution**: 54 hours (7 working days)
+
+**Parallel Execution**: ~30 hours (4 working days)
+
+**Time Savings**: ~24 hours (44%)
+
+### Wave 1 (3 tasks in parallel, 3 hours)
+- T001: Project Init (2h)
+- T002: Database Schema (3h)
+- T004: Frontend Shell (2h)
+
+### Wave 2 (3 tasks in parallel, 5 hours)
+- T003: API Framework (depends on T001)
+- T005: Authentication API (depends on T002)
+- ...
+
+**Critical Path**: T001 → T003 → ...
+```
+
+## Parallel Execution Optimization
+
+**CRITICAL**: The architect must optimize for parallel execution:
+
+1. **Identify Independent Tasks**
+   - Database work + Frontend work = parallel
+   - API routes that don't share files = parallel
+   - Documentation + Implementation = parallel
+
+2. **Minimize Dependencies**
+   - Don't make T003 depend on T002 unless truly necessary
+   - Split monolithic tasks into smaller, independent pieces
+
+3. **Quality Bonus**
+   - Parallelization score ≥70%: +15 points
+   - Parallelization score ≥40%: +10 points
+
+## Validation & Next Steps
+
+After plan creation:
+1. Show dependency graph visualization
+2. Display time savings calculation
+3. Highlight any circular dependencies (must fix!)
+4. Show quality score
+
+**Next**: Run `/implement` to execute tasks in parallel waves!

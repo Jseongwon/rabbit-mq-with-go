@@ -1,0 +1,224 @@
+---
+description: Validate current phase or specific deliverable (SpecKit quality check)
+allowed-tools: Read(**/*), Write(**/*), Bash(node:*)
+---
+
+# Validate - Quality Check for SpecKit Deliverables
+
+You are performing quality validation for SpecKit workflow deliverables.
+
+## Your Task
+
+1. **Determine What to Validate**
+   - Read `.speckit/state.json` to see current phase
+   - Check which deliverables exist:
+     - `.speckit/CONSTITUTION.md`
+     - `.speckit/SPECIFICATION.md`
+     - `.speckit/PLAN.md`
+
+2. **Validate Based on User Request**
+
+   **If user provides argument** (e.g., `/validate plan`):
+   - Validate that specific deliverable
+
+   **If no argument**:
+   - Validate the most recent completed phase
+   - Or offer to validate all deliverables
+
+3. **Constitution Validation**
+
+   If validating constitution:
+   - Read `.speckit/CONSTITUTION.md`
+   - Check for:
+     - Clear vision statement
+     - Specific core values (3-5)
+     - Concrete technology choices
+     - Measurable quality standards
+     - Actionable development principles
+
+   - Score on:
+     - **Clarity** (0-100): Is it understandable?
+     - **Completeness** (0-100): Covers all aspects?
+     - **Actionability** (0-100): Can devs act on it?
+
+   - Threshold: ≥80% for each metric
+
+   - Write report to `.speckit/quality/constitution-quality.json`
+
+4. **Specification Validation**
+
+   If validating specification:
+   - Read `.speckit/SPECIFICATION.md`
+   - Check for:
+     - Functional requirements (FR001, FR002, etc.)
+     - Non-functional requirements (NFR001, NFR002, etc.)
+     - User stories with acceptance criteria
+     - Success metrics
+
+   - Score on:
+     - **Clarity** (0-100): Requirements clear?
+     - **Completeness** (0-100): All aspects covered?
+     - **Testability** (0-100): Can requirements be tested?
+
+   - Threshold: ≥85% for each metric
+
+   - Write report to `.speckit/quality/specification-quality.json`
+
+5. **Plan Validation**
+
+   If validating plan:
+   - Read `.speckit/PLAN.md`
+   - Parse dependency graph using:
+     ```bash
+     node -e "
+     import('./src/core/dependency-graph.js').then(m => {
+       const fs = require('fs');
+       const plan = fs.readFileSync('.speckit/PLAN.md', 'utf-8');
+       const graph = m.parseDependencyGraph(plan);
+
+       // Check for circular dependencies
+       const circular = m.detectCircularDependencies(graph);
+       if (circular.length > 0) {
+         console.error('CIRCULAR DEPENDENCIES:', circular);
+         process.exit(1);
+       }
+
+       // Generate execution plan
+       console.log('=== EXECUTION PLAN ===');
+       console.log(m.generateExecutionPlan(graph));
+
+       // Calculate savings
+       const savings = m.calculateTimeSavings(graph);
+       console.log('\\n=== TIME SAVINGS ===');
+       console.log(JSON.stringify(savings, null, 2));
+
+       // Parallelization score
+       const parallelScore = m.calculateParallelizationScore(graph);
+       console.log('\\nParallelization Score:', parallelScore + '%');
+     });
+     "
+     ```
+
+   - Check for:
+     - Task breakdown with IDs (T001, T002, etc.)
+     - Dependencies clearly stated
+     - Estimated times provided
+     - Acceptance criteria for each task
+     - Architecture decisions justified
+     - No circular dependencies
+
+   - Score on:
+     - **Clarity** (0-100): Plan easy to understand?
+     - **Completeness** (0-100): All tasks covered?
+     - **Actionability** (0-100): Can engineers implement?
+     - **Parallelization** (0-100): Optimized for parallel execution?
+
+   - Bonuses:
+     - +15 points if parallelization ≥70%
+     - +10 points if parallelization ≥40%
+     - +5 points if parallelization ≥20%
+
+   - Threshold: ≥85% overall
+
+   - Write report to `.speckit/quality/plan-quality.json`
+
+6. **Display Results**
+
+   Show validation summary:
+   ```
+   ╔═══════════════════════════════════════════════╗
+   ║  VALIDATION REPORT: PLAN                     ║
+   ╠═══════════════════════════════════════════════╣
+   ║  Clarity:          92% ✓                     ║
+   ║  Completeness:     88% ✓                     ║
+   ║  Actionability:    90% ✓                     ║
+   ║  Parallelization:  74% ✓ (+15 bonus)        ║
+   ║                                              ║
+   ║  Overall Score:    96% ✓ EXCELLENT          ║
+   ║                                              ║
+   ║  Time Savings:     26h (48%)                ║
+   ║  Execution Waves:  5 waves                  ║
+   ║  Total Tasks:      16 tasks                 ║
+   ║                                              ║
+   ║  Issues Found:     0 critical, 2 minor      ║
+   ╚═══════════════════════════════════════════════╝
+   ```
+
+7. **Handle Quality Issues**
+
+   If score < threshold:
+   - List specific problems found
+   - Provide actionable recommendations
+   - Offer to fix issues automatically
+   - Re-validate after fixes
+
+## Example Execution Plans
+
+When validating a plan, show the parallel execution visualization:
+
+```
+═══════════════════════════════════════════════════
+PARALLEL EXECUTION PLAN
+═══════════════════════════════════════════════════
+
+Wave 1 (3 tasks, max 3 hours):
+  ├─ T001: Project Initialization (2h)
+  ├─ T002: Database Schema (3h)
+  └─ T004: Frontend Shell (2h)
+
+Wave 2 (3 tasks, max 5 hours):
+  ├─ T003: API Framework (2h) [depends on T001]
+  ├─ T005: User Auth API (4h) [depends on T002]
+  └─ T006: Product CRUD API (3h) [depends on T002]
+
+Wave 3 (2 tasks, max 4 hours):
+  ├─ T007: Shopping Cart API (3h) [depends on T003]
+  └─ T008: Frontend Auth (4h) [depends on T004, T005]
+
+... (more waves)
+
+═══════════════════════════════════════════════════
+TIME ANALYSIS
+═══════════════════════════════════════════════════
+
+Sequential:  54 hours (7 working days)
+Parallel:    28 hours (4 working days)
+Saved:       26 hours (48% faster!)
+
+Critical Path: T001 → T003 → T007 → T011 → T012
+```
+
+## Quality Recommendations
+
+If issues are found, provide specific guidance:
+
+**Low Clarity**: "FR003 is ambiguous - specify exact behavior"
+**Low Completeness**: "Missing error handling requirements"
+**Low Testability**: "NFR002 needs measurable metrics"
+**Low Parallelization**: "T005 and T006 could run in parallel"
+
+## Command Usage
+
+Users can run:
+- `/validate` - Validate current phase
+- `/validate constitution` - Validate constitution only
+- `/validate spec` or `/validate specification` - Validate spec
+- `/validate plan` - Validate plan with parallel execution analysis
+- `/validate all` - Validate all deliverables
+
+## Output Files
+
+Each validation creates a JSON report:
+- `.speckit/quality/constitution-quality.json`
+- `.speckit/quality/specification-quality.json`
+- `.speckit/quality/plan-quality.json`
+
+Reports include:
+- Scores for each metric
+- Overall score
+- Pass/fail status
+- List of issues found
+- Recommendations
+- Timestamp
+
+**Use validation early and often to catch issues before implementation!**

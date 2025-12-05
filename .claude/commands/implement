@@ -1,0 +1,213 @@
+---
+description: Execute tasks in parallel waves with TDD (SpecKit Implementation phase)
+allowed-tools: Read(**/*), Write(**/*), Edit(**/*), Bash(*), Task(*)
+---
+
+# Implement Phase - Parallel Task Execution with TDD
+
+You are orchestrating the **Implement** phase of the SpecKit workflow.
+
+## Current Phase: IMPLEMENT
+
+**Goal**: Execute implementation tasks in **parallel waves** using TDD, achieving 40-60% time reduction.
+
+## Your Task
+
+1. **Validate Prerequisites**
+   - Read `.speckit/state.json` to verify workflow state
+   - Ensure plan phase is complete
+   - Read `.speckit/PLAN.md` to get task list
+   - Read `.speckit/CONSTITUTION.md` for development principles
+   - Read `.speckit/SPECIFICATION.md` for requirements
+
+2. **Parse Dependency Graph**
+   - Use Bash to run dependency analysis:
+     ```bash
+     node -e "
+     import('./src/core/dependency-graph.js').then(m => {
+       const fs = require('fs');
+       const plan = fs.readFileSync('.speckit/PLAN.md', 'utf-8');
+       const graph = m.parseDependencyGraph(plan);
+       const waves = m.topologicalSort(graph);
+       const savings = m.calculateTimeSavings(graph);
+
+       console.log('=== PARALLEL EXECUTION PLAN ===');
+       console.log(m.generateExecutionPlan(graph));
+       console.log('\\n=== TIME SAVINGS ===');
+       console.log(JSON.stringify(savings, null, 2));
+     });
+     "
+     ```
+
+3. **Show Execution Strategy**
+   - Display execution waves
+   - Show tasks that will run in parallel
+   - Display expected time savings
+   - Get user confirmation to proceed
+
+4. **Execute in Parallel Waves**
+
+   For each wave of independent tasks:
+
+   a) **Display Wave Info**
+      ```
+      ╔═══════════════════════════════════════════╗
+      ║  WAVE 1: 3 tasks (max 3 hours)          ║
+      ╠═══════════════════════════════════════════╣
+      ║  • T001: Project Initialization (2h)     ║
+      ║  • T002: Database Schema (3h)            ║
+      ║  • T004: Frontend Shell (2h)             ║
+      ╚═══════════════════════════════════════════╝
+      ```
+
+   b) **Launch Parallel Tasks**
+      - Use **multiple Task tool calls in a SINGLE message**
+      - Each task gets an Implementation Engineer agent
+      - Example:
+        ```
+        Task 1: "Implement T001: Project Initialization"
+        Task 2: "Implement T002: Database Schema"
+        Task 3: "Implement T004: Frontend Shell"
+        ```
+
+   c) **Engineer Agent Instructions**
+      For each task, the agent should:
+      ```
+      You are an Implementation Engineer from .claude/agents/engineer.md.
+
+      Implement [TASK_ID]: [TASK_NAME]
+
+      **Requirements from SPECIFICATION.md:**
+      [Extract relevant FRs, NFRs, and user stories]
+
+      **Acceptance Criteria from PLAN.md:**
+      [List checkboxes from task]
+
+      **TDD Workflow (MANDATORY):**
+      1. RED: Write failing test first
+      2. GREEN: Write minimal code to pass
+      3. REFACTOR: Improve code quality
+
+      **Your deliverables:**
+      - Implementation code
+      - Test file(s) with passing tests
+      - Update task checkboxes in PLAN.md
+      - Report completion status
+
+      Follow constitution principles.
+      Ensure all acceptance criteria are met.
+      ```
+
+   d) **Wait for Wave Completion**
+      - All tasks in the wave must complete before moving to next wave
+      - Track progress for each task
+      - Handle any failures or blockers
+
+   e) **Validate Wave Results**
+      - Run tests: `npm test` or equivalent
+      - Verify all acceptance criteria checked off
+      - Update `.speckit/state.json` with completed tasks
+
+   f) **Move to Next Wave**
+      - Show wave completion summary
+      - Display overall progress (e.g., "Wave 1/5 complete, 15% done")
+      - Calculate time saved so far
+
+5. **Final Validation**
+   - Run full test suite
+   - Verify all tasks completed
+   - Check quality metrics
+   - Generate final implementation report
+
+6. **Update Workflow State**
+   - Mark implement phase as complete in `.speckit/state.json`
+   - Record total time taken
+   - Calculate actual time savings vs estimate
+
+7. **Show Success Summary**
+   ```
+   ╔═══════════════════════════════════════════════╗
+   ║  🎉 IMPLEMENTATION COMPLETE!                 ║
+   ╠═══════════════════════════════════════════════╣
+   ║  Total Tasks: 16                             ║
+   ║  Waves Executed: 5                           ║
+   ║  Sequential Time: 54 hours                   ║
+   ║  Parallel Time: 28 hours                     ║
+   ║  Time Saved: 26 hours (48%)                  ║
+   ║  Tests Passing: ✓ 142/142                    ║
+   ║  Quality Score: 94%                          ║
+   ╚═══════════════════════════════════════════════╝
+   ```
+
+## Parallel Execution Rules
+
+**CRITICAL**: To maximize time savings:
+
+1. **Launch ALL tasks in a wave simultaneously**
+   - Don't wait for one to finish before starting the next
+   - Use multiple Task tool calls in ONE message
+
+2. **Independent Tasks Only**
+   - Tasks in the same wave must have no dependencies
+   - Verified by topological sort
+
+3. **Wave Barrier**
+   - Must wait for ALL tasks in wave to complete
+   - Then proceed to next wave
+
+4. **Progress Tracking**
+   - Show current wave number
+   - Show tasks in progress
+   - Show completed vs total tasks
+   - Show time saved
+
+## TDD Enforcement
+
+Every task MUST follow TDD:
+
+1. **RED**: Write failing test
+2. **GREEN**: Implement minimal code
+3. **REFACTOR**: Improve quality
+
+If tests are missing or fail:
+- Block task completion
+- Request test fixes
+- Re-validate before proceeding
+
+## Error Handling
+
+If a task fails:
+1. Show which task failed
+2. Display error details
+3. Ask user: Retry, Skip, or Abort?
+4. If skipped, mark dependent tasks as blocked
+
+## Wave Execution Example
+
+```
+Wave 1 (3 tasks in parallel):
+  ⏳ T001: Project Init (2h) → In Progress
+  ⏳ T002: Database Schema (3h) → In Progress
+  ⏳ T004: Frontend Shell (2h) → In Progress
+
+  ✅ T001: Project Init → Complete (1.8h)
+  ⏳ T002: Database Schema → In Progress
+  ✅ T004: Frontend Shell → Complete (2.1h)
+
+  ✅ T002: Database Schema → Complete (3.2h)
+
+Wave 1 Complete! (3.2h actual vs 3h estimated)
+Total Progress: 3/16 tasks (18%)
+Time Saved So Far: 1.8 hours
+
+Moving to Wave 2...
+```
+
+## Important Notes
+
+- **Parallelization is key**: This is what makes SpecKit powerful!
+- **TDD is mandatory**: No shortcuts on testing
+- **Communication**: Keep user informed of progress
+- **Flexibility**: Handle blockers gracefully
+
+**This phase shows the true power of SpecKit: structured, parallel, test-driven development!**
